@@ -145,4 +145,19 @@ You can also use the **interactive Swagger UI** at: **http://localhost:8000/docs
   - `https://www.googleapis.com/auth/documents` — read/write Google Docs
   - `https://www.googleapis.com/auth/gmail.compose` — create Gmail drafts
 - If you change scopes, delete `token.json` and re-authenticate.
-- The server uses `input()` for terminal approval, so it must be run in an interactive terminal (not as a background daemon).
+- **Local run:** The server uses `input()` for terminal approval, so it must be run in an interactive terminal.
+- **Production run:** If deployed (e.g. to Railway), set `REQUIRE_APPROVAL=false` to bypass the interactive terminal prompt.
+
+---
+
+## ☁️ Railway Deployment
+
+This server can be easily deployed to [Railway](https://railway.app/). 
+
+1. Ensure you have run the app locally at least once so `token.json` is generated.
+2. In Railway, deploy this repository.
+3. In your Railway **Variables** tab, add the following variables:
+   - **`REQUIRE_APPROVAL`**: `false` (bypasses terminal prompts so the app doesn't crash)
+   - **`GOOGLE_CREDENTIALS_JSON`**: Paste the entire contents of your local `credentials.json` file here.
+   - **`GOOGLE_TOKEN_JSON`**: Paste the entire contents of your local `token.json` file here.
+4. The provided `Procfile` will automatically start the server.
