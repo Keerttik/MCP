@@ -8,6 +8,7 @@ Uses the Gmail API's drafts.create endpoint.
 import base64
 from email.mime.text import MIMEText
 
+# pyrefly: ignore [missing-import]
 from googleapiclient.discovery import build
 from auth import get_credentials
 

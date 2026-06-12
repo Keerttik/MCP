@@ -6,6 +6,7 @@ Scopes: Google Docs (read/write) + Gmail (compose drafts).
 """
 
 import os
+import json
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -40,7 +41,13 @@ def get_credentials() -> Credentials:
     creds: Credentials | None = None
 
     # ── Step 1: Try loading cached token ──────────────────────────
-    if os.path.exists(TOKEN_FILE):
+    if "GOOGLE_TOKEN_JSON" in os.environ:
+        try:
+            token_info = json.loads(os.environ["GOOGLE_TOKEN_JSON"])
+            creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+        except json.JSONDecodeError:
+            print("⚠️ Failed to parse GOOGLE_TOKEN_JSON environment variable.")
+    elif os.path.exists(TOKEN_FILE):
         creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
 
     # ── Step 2: Refresh or re-authenticate ────────────────────────
@@ -49,18 +56,27 @@ def get_credentials() -> Credentials:
             print("⟳  Refreshing expired token …")
             creds.refresh(Request())
         else:
-            if not os.path.exists(CREDENTIALS_FILE):
+            if "GOOGLE_CREDENTIALS_JSON" in os.environ:
+                try:
+                    client_config = json.loads(os.environ["GOOGLE_CREDENTIALS_JSON"])
+                    flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
+                except json.JSONDecodeError:
+                    raise ValueError("Failed to parse GOOGLE_CREDENTIALS_JSON")
+            elif not os.path.exists(CREDENTIALS_FILE):
                 raise FileNotFoundError(
-                    f"Missing {CREDENTIALS_FILE}. "
-                    "Download it from the Google Cloud Console → APIs & Services → Credentials."
+                    f"Missing {CREDENTIALS_FILE} and GOOGLE_CREDENTIALS_JSON. "
+                    "Download credentials from Google Cloud Console."
                 )
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+            
             print("🔐 Launching browser for Google OAuth consent …")
-            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
             creds = flow.run_local_server(port=0)
 
         # ── Step 3: Persist token for next time ───────────────────
-        with open(TOKEN_FILE, "w") as token_file:
-            token_file.write(creds.to_json())
-        print(f"✅ Token saved to {TOKEN_FILE}")
+        if "GOOGLE_TOKEN_JSON" not in os.environ:
+            with open(TOKEN_FILE, "w") as token_file:
+                token_file.write(creds.to_json())
+            print(f"✅ Token saved to {TOKEN_FILE}")
 
     return creds
