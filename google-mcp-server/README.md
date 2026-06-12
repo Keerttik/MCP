@@ -160,4 +160,5 @@ This server can be easily deployed to [Railway](https://railway.app/).
    - **`REQUIRE_APPROVAL`**: `false` (bypasses terminal prompts so the app doesn't crash)
    - **`GOOGLE_CREDENTIALS_JSON`**: Paste the entire contents of your local `credentials.json` file here.
    - **`GOOGLE_TOKEN_JSON`**: Paste the entire contents of your local `token.json` file here.
+   - **`MCP_API_SECRET_KEY`**: *(Optional but recommended)* A secret string of your choice. If set, clients must pass this key as a Bearer token in the `Authorization` header.
 4. The provided `Procfile` will automatically start the server.

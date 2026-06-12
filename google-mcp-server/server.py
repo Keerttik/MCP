@@ -7,8 +7,10 @@ before the Google API call is executed.
 """
 
 import sys
+import os
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Security, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 
 from docs_tool import append_to_doc
@@ -20,6 +22,15 @@ app = FastAPI(
     description="MCP-style server with human-in-the-loop approval for Google Docs and Gmail actions.",
     version="1.0.0",
 )
+
+# ── API Key Security ──────────────────────────────────────────────
+security = HTTPBearer(auto_error=False)
+
+def verify_api_key(credentials: HTTPAuthorizationCredentials = Security(security)):
+    expected_key = os.environ.get("MCP_API_SECRET_KEY")
+    if expected_key:
+        if not credentials or credentials.credentials != expected_key:
+            raise HTTPException(status_code=403, detail="Invalid or missing API Key")
 
 
 # ── Request schemas ───────────────────────────────────────────────
@@ -69,7 +80,7 @@ def request_approval(action_name: str, payload: dict) -> bool:
 
 
 # ── Endpoints ─────────────────────────────────────────────────────
-@app.post("/append_to_doc")
+@app.post("/append_to_doc", dependencies=[Depends(verify_api_key)])
 def endpoint_append_to_doc(req: AppendDocRequest):
     """Append text to a Google Doc (requires terminal approval)."""
     payload = {"doc_id": req.doc_id, "content": req.content}
@@ -84,7 +95,7 @@ def endpoint_append_to_doc(req: AppendDocRequest):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@app.post("/create_email_draft")
+@app.post("/create_email_draft", dependencies=[Depends(verify_api_key)])
 def endpoint_create_email_draft(req: CreateDraftRequest):
     """Create a Gmail draft (requires terminal approval)."""
     payload = {"to": req.to, "subject": req.subject, "body": req.body}
